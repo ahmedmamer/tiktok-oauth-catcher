@@ -2,52 +2,269 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>TikTok Shop OAuth Callback</title>
+<title>The Everyday Label — Admin Console</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #eee; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-  .card { max-width: 640px; padding: 32px; background: #1a1a1a; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
-  h1 { font-size: 20px; margin-top: 0; }
-  .field { margin: 16px 0; }
-  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
-  code, .value { display: block; word-break: break-all; background: #000; padding: 12px; border-radius: 8px; font-size: 14px; color: #7CFC7C; }
-  .empty { color: #666; font-style: italic; }
-  button { margin-top: 8px; background: #333; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  button:hover { background: #444; }
-  .note { margin-top: 24px; font-size: 12px; color: #888; }
+  :root { --orange: #f7941d; --dark: #0f0f0f; --card: #1a1a1a; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background: var(--dark); color: #eee;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; margin: 0; padding: 24px;
+  }
+  .card { max-width: 480px; width: 100%; padding: 32px; background: var(--card); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .brand img { width: 44px; height: 44px; border-radius: 10px; }
+  .brand h1 { font-size: 18px; margin: 0; }
+  .brand p { font-size: 12px; color: #999; margin: 2px 0 0; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px 18px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px;
+  }
+  .btn-tiktok { background: #000; color: #fff; border: 1px solid #333; }
+  .btn-tiktok:hover { background: #1a1a1a; }
+  .btn-primary { background: var(--orange); color: #000; }
+  .btn-primary:hover { background: #ffab4d; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .profile { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 12px; background: #111; border-radius: 10px; }
+  .profile img { width: 48px; height: 48px; border-radius: 50%; }
+  .profile .name { font-weight: 600; }
+  .profile .meta { font-size: 12px; color: #888; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin: 20px 0 8px; }
+  select {
+    width: 100%; padding: 10px 12px; border-radius: 8px; background: #111; color: #eee;
+    border: 1px solid #333; font-size: 14px;
+  }
+  .status { margin-top: 16px; font-size: 13px; color: #aaa; white-space: pre-wrap; word-break: break-word; }
+  .status.ok { color: #7CFC7C; }
+  .status.err { color: #ff6b6b; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #444; border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  video { width: 100%; border-radius: 10px; margin-top: 12px; background: #000; }
+  .note { margin-top: 24px; font-size: 11px; color: #666; line-height: 1.5; }
+  .badge { display: inline-block; background: #222; color: #bbb; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>TikTok Shop OAuth Callback</h1>
-    <div class="field">
-      <label>code</label>
-      <div class="value" id="code">—</div>
-      <button onclick="copyField('code')">Copy code</button>
+    <div class="brand">
+      <img src="logo.png" alt="The Everyday Label logo" onerror="this.style.display='none'">
+      <div>
+        <h1>The Everyday Label — Admin Console</h1>
+        <p>Internal tool · TikTok Login Kit + Content Posting API demo</p>
+      </div>
     </div>
-    <div class="field">
-      <label>state</label>
-      <div class="value" id="state">—</div>
+
+    <!-- STEP 1: not logged in -->
+    <div id="login-view">
+      <p style="font-size:14px;color:#ccc;">Sign in with TikTok to manage and publish content for The Everyday Label.</p>
+      <button class="btn btn-tiktok" id="login-btn">Continue with TikTok</button>
     </div>
-    <div class="field">
-      <label>full query string</label>
-      <div class="value" id="raw">—</div>
+
+    <!-- STEP 2: exchanging code -->
+    <div id="loading-view" style="display:none; text-align:center; padding: 20px 0;">
+      <div class="spinner"></div>
+      <p style="font-size:13px;color:#999;margin-top:12px;">Signing you in…</p>
     </div>
-    <p class="note">This is a private one-time OAuth redirect catcher for The Everyday Label's TikTok Shop Partner Center app. Copy the "code" value above and send it back for the token exchange.</p>
+
+    <!-- STEP 3: logged in -->
+    <div id="app-view" style="display:none;">
+      <div class="profile">
+        <img id="avatar" src="" alt="avatar">
+        <div>
+          <div class="name" id="display-name">—</div>
+          <div class="meta">Signed in via TikTok Login Kit</div>
+        </div>
+      </div>
+
+      <div class="section-label">Post a video <span class="badge">Content Posting API</span></div>
+      <video id="preview" src="demo_post.mp4" controls muted></video>
+
+      <div class="section-label">Privacy level</div>
+      <select id="privacy-select"><option>Loading options…</option></select>
+
+      <button class="btn btn-primary" id="publish-btn" style="margin-top:16px;">Post to TikTok</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <p class="note">
+      Backend: token exchange, creator info, and video publish are proxied server-side (client secret never reaches the browser).
+      This app is unaudited — posts are restricted to private (Only Me) viewing.
+    </p>
   </div>
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    document.getElementById('code').textContent = code || '(none — no code param in URL)';
-    document.getElementById('code').className = code ? 'value' : 'value empty';
-    document.getElementById('state').textContent = state || '(none)';
-    document.getElementById('state').className = state ? 'value' : 'value empty';
-    document.getElementById('raw').textContent = window.location.search || '(empty)';
-    function copyField(id) {
-      const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text).then(() => alert('Copied: ' + text));
+
+<script>
+  // ---- Config ----
+  const CLIENT_KEY = "awe4mhfp4hidk55n";
+  const REDIRECT_URI = "https://ahmedmamer.github.io/tiktok-oauth-catcher/";
+  const BACKEND_BASE = "https://cartoon-praise-sea-upc.trycloudflare.com";
+  const SCOPES = "user.info.basic,video.publish";
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const stateParam = params.get("state");
+  const errorParam = params.get("error");
+
+  const loginView = document.getElementById("login-view");
+  const loadingView = document.getElementById("loading-view");
+  const appView = document.getElementById("app-view");
+  const statusEl = document.getElementById("status");
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (cls ? " " + cls : "");
+  }
+
+  document.getElementById("login-btn").addEventListener("click", () => {
+    const csrfState = Math.random().toString(36).slice(2);
+    sessionStorage.setItem("csrfState", csrfState);
+    const url = "https://www.tiktok.com/v2/auth/authorize/"
+      + "?client_key=" + encodeURIComponent(CLIENT_KEY)
+      + "&scope=" + encodeURIComponent(SCOPES)
+      + "&response_type=code"
+      + "&redirect_uri=" + encodeURIComponent(REDIRECT_URI)
+      + "&state=" + encodeURIComponent(csrfState);
+    window.location.href = url;
+  });
+
+  async function afterLogin(accessToken) {
+    sessionStorage.setItem("accessToken", accessToken);
+    loadingView.style.display = "none";
+    appView.style.display = "block";
+
+    // user info
+    try {
+      const r = await fetch(BACKEND_BASE + "/api/user-info", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const j = await r.json();
+      const u = j.data && j.data.user;
+      if (u) {
+        document.getElementById("display-name").textContent = u.display_name || "TikTok user";
+        document.getElementById("avatar").src = u.avatar_url || "";
+      }
+    } catch (e) { console.error(e); }
+
+    // creator info (privacy options)
+    try {
+      const r = await fetch(BACKEND_BASE + "/api/creator-info", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const j = await r.json();
+      const opts = (j.data && j.data.privacy_level_options) || ["SELF_ONLY"];
+      const sel = document.getElementById("privacy-select");
+      sel.innerHTML = "";
+      opts.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o; opt.textContent = o.replaceAll("_", " ");
+        if (o === "SELF_ONLY") opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (j.data && j.data.creator_nickname) {
+        document.getElementById("display-name").textContent = j.data.creator_nickname;
+      }
+      if (j.data && j.data.creator_avatar_url) {
+        document.getElementById("avatar").src = j.data.creator_avatar_url;
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  document.getElementById("publish-btn").addEventListener("click", async () => {
+    const accessToken = sessionStorage.getItem("accessToken");
+    const privacy = document.getElementById("privacy-select").value;
+    const btn = document.getElementById("publish-btn");
+    btn.disabled = true;
+    setStatus("Uploading video to TikTok…");
+    try {
+      const r = await fetch(BACKEND_BASE + "/api/publish", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken, privacy_level: privacy }),
+      });
+      const j = await r.json();
+      if (!j.publish_id) {
+        setStatus("Publish failed: " + JSON.stringify(j), "err");
+        btn.disabled = false;
+        return;
+      }
+      setStatus("Uploaded. Processing on TikTok's side (publish_id: " + j.publish_id + ")…");
+      await pollStatus(accessToken, j.publish_id);
+    } catch (e) {
+      setStatus("Error: " + e.message, "err");
     }
-  </script>
+    btn.disabled = false;
+  });
+
+  async function pollStatus(accessToken, publishId, attempts) {
+    attempts = attempts || 0;
+    if (attempts > 20) { setStatus("Still processing — check the TikTok app.", "ok"); return; }
+    try {
+      const r = await fetch(BACKEND_BASE + "/api/publish-status", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken, publish_id: publishId }),
+      });
+      const j = await r.json();
+      const status = j.data && j.data.status;
+      if (status === "PUBLISH_COMPLETE") {
+        setStatus("✅ Posted successfully (private/only-me — app is unaudited).", "ok");
+        return;
+      }
+      if (status === "FAILED") {
+        setStatus("❌ Publish failed: " + JSON.stringify(j.data), "err");
+        return;
+      }
+      setStatus("Status: " + (status || "processing") + " …");
+      setTimeout(() => pollStatus(accessToken, publishId, attempts + 1), 3000);
+    } catch (e) {
+      setStatus("Status check error: " + e.message, "err");
+    }
+  }
+
+  // ---- Boot ----
+  (async function boot() {
+    if (errorParam) {
+      loginView.style.display = "none";
+      setStatus("Login was not completed: " + errorParam, "err");
+      appView.style.display = "block";
+      return;
+    }
+    if (code) {
+      loginView.style.display = "none";
+      loadingView.style.display = "block";
+      try {
+        const r = await fetch(BACKEND_BASE + "/api/token", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+        const j = await r.json();
+        if (j.access_token) {
+          await afterLogin(j.access_token);
+          // clean the URL bar of the auth code (cosmetic, keeps demo tidy)
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          loadingView.style.display = "none";
+          appView.style.display = "block";
+          setStatus("Token exchange failed: " + JSON.stringify(j), "err");
+        }
+      } catch (e) {
+        loadingView.style.display = "none";
+        appView.style.display = "block";
+        setStatus("Token exchange error: " + e.message, "err");
+      }
+      return;
+    }
+    // no code, no error -> fresh login screen
+    const savedToken = sessionStorage.getItem("accessToken");
+    if (savedToken) {
+      loginView.style.display = "none";
+      appView.style.display = "block";
+      afterLogin(savedToken);
+    }
+  })();
+</script>
 </body>
 </html>

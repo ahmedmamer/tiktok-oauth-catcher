@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>TikTok Shop OAuth Callback</title>
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0f0f0f; color: #eee; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { max-width: 640px; padding: 32px; background: #1a1a1a; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  h1 { font-size: 20px; margin-top: 0; }
+  .field { margin: 16px 0; }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
+  code, .value { display: block; word-break: break-all; background: #000; padding: 12px; border-radius: 8px; font-size: 14px; color: #7CFC7C; }
+  .empty { color: #666; font-style: italic; }
+  button { margin-top: 8px; background: #333; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #444; }
+  .note { margin-top: 24px; font-size: 12px; color: #888; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>TikTok Shop OAuth Callback</h1>
+    <div class="field">
+      <label>code</label>
+      <div class="value" id="code">—</div>
+      <button onclick="copyField('code')">Copy code</button>
+    </div>
+    <div class="field">
+      <label>state</label>
+      <div class="value" id="state">—</div>
+    </div>
+    <div class="field">
+      <label>full query string</label>
+      <div class="value" id="raw">—</div>
+    </div>
+    <p class="note">This is a private one-time OAuth redirect catcher for The Everyday Label's TikTok Shop Partner Center app. Copy the "code" value above and send it back for the token exchange.</p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    document.getElementById('code').textContent = code || '(none — no code param in URL)';
+    document.getElementById('code').className = code ? 'value' : 'value empty';
+    document.getElementById('state').textContent = state || '(none)';
+    document.getElementById('state').className = state ? 'value' : 'value empty';
+    document.getElementById('raw').textContent = window.location.search || '(empty)';
+    function copyField(id) {
+      const text = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(text).then(() => alert('Copied: ' + text));
+    }
+  </script>
+</body>
+</html>
