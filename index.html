@@ -81,12 +81,13 @@
       </div>
 
       <div class="section-label">Post a video <span class="badge">Content Posting API</span></div>
-      <video id="preview" src="demo_post.mp4" controls muted></video>
+      <input type="file" id="video-input" accept="video/mp4,video/quicktime,video/webm" style="width:100%; padding:10px; background:#111; border:1px solid #333; border-radius:8px; color:#eee;">
+      <video id="preview" controls muted style="display:none;"></video>
 
       <div class="section-label">Privacy level</div>
       <select id="privacy-select"><option>Loading options…</option></select>
 
-      <button class="btn btn-primary" id="publish-btn" style="margin-top:16px;">Post to TikTok</button>
+      <button class="btn btn-primary" id="publish-btn" style="margin-top:16px;" disabled>Choose a video first</button>
       <div class="status" id="status"></div>
     </div>
 
@@ -174,21 +175,50 @@
     } catch (e) { console.error(e); }
   }
 
-  document.getElementById("publish-btn").addEventListener("click", async () => {
+  const videoInput = document.getElementById("video-input");
+  const preview = document.getElementById("preview");
+  const publishBtn = document.getElementById("publish-btn");
+
+  videoInput.addEventListener("change", () => {
+    const file = videoInput.files[0];
+    if (!file) {
+      publishBtn.disabled = true;
+      publishBtn.textContent = "Choose a video first";
+      preview.style.display = "none";
+      return;
+    }
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+    publishBtn.disabled = false;
+    publishBtn.textContent = "Post to TikTok";
+    setStatus("Selected: " + file.name + " (" + (file.size / (1024 * 1024)).toFixed(1) + " MB)");
+  });
+
+  publishBtn.addEventListener("click", async () => {
     const accessToken = sessionStorage.getItem("accessToken");
     const privacy = document.getElementById("privacy-select").value;
-    const btn = document.getElementById("publish-btn");
-    btn.disabled = true;
-    setStatus("Uploading video to TikTok…");
+    const file = videoInput.files[0];
+    if (!file) {
+      setStatus("Choose a video file first.", "err");
+      return;
+    }
+    publishBtn.disabled = true;
+    setStatus("Uploading " + file.name + " to TikTok…");
     try {
+      const form = new FormData();
+      form.append("access_token", accessToken);
+      form.append("privacy_level", privacy);
+      form.append("title", "Testing The Everyday Label's TikTok integration #dev");
+      form.append("video", file, file.name);
+
       const r = await fetch(BACKEND_BASE + "/api/publish", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: accessToken, privacy_level: privacy }),
+        method: "POST",
+        body: form,
       });
       const j = await r.json();
       if (!j.publish_id) {
         setStatus("Publish failed: " + JSON.stringify(j), "err");
-        btn.disabled = false;
+        publishBtn.disabled = false;
         return;
       }
       setStatus("Uploaded. Processing on TikTok's side (publish_id: " + j.publish_id + ")…");
@@ -196,7 +226,7 @@
     } catch (e) {
       setStatus("Error: " + e.message, "err");
     }
-    btn.disabled = false;
+    publishBtn.disabled = false;
   });
 
   async function pollStatus(accessToken, publishId, attempts) {
